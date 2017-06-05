@@ -10,12 +10,14 @@ node {
         stage ('GIT Checkout'){
             dir(env.ZIPDIR)
             {
-                sh 'rm -fR $MIQCORE/'
-                sh 'mkdir $MIQCORE'
-            }
-            dir('$ZIPDIR/$MIQCORE')
-            {
-                git ([url: params.url, branch: params.branches])
+                sh 'rm -fR env.MIQCORE/'
+                checkout([$class: 'GitSCM',
+                          branches: [[name: params.branches]],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [[$class: 'RelativeTargetDirectory',relativeTargetDir: env.MIQCORE]],
+                          submoduleCfg: [],
+                          userRemoteConfigs: [[credentialsId: params.creds, url:  params.url]]
+                         ])
             }
         }
         stage('Package Files'){
