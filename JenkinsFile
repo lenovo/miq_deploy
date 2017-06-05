@@ -1,14 +1,8 @@
-
-env.TOP = '/home/lenovo'
-env.DEPLOYDIR = '/home/lenovo/prod'
-env.CREDS = '49486175-5c22-467e-a0cf-931f046e4d56'
-env.GITCREDS = '2eab452b-c763-4e18-ad05-560968c3d4ec'
+env.TOP='/home/lenovo/'
 env.ZIPDIR = 'miq/'
 env.ZIPFILE = 'manageiq.zip'
-env.BRANCHES = '*/master'
 env.MIQCORE = 'manageiq'
-env.TARGETHOST = '10.243.10.29'
-env.MIQURL = 'https://github.com/manageiq/manageiq'
+
 
 node {
         checkout scm
@@ -17,10 +11,13 @@ node {
             dir(env.ZIPDIR)
             {
                 sh 'rm -fR env.MIQCORE/'
-                checkout([$class: 'GitSCM', branches: [[name: env.BRANCHES]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: env.MIQCORE]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: env.GITCREDS, url:  env.MIQURL]]])
+                sh 'mkdir env.MIQCORE'
+            }
+            dir('env.ZIPDIR/env.MIQCORE')
+            {
+                git ([url: params.url, branch: params.branches])
             }
         }
-
         stage('Package Files'){
 
             dir(env.ZIPDIR){
@@ -28,24 +25,21 @@ node {
                 sh 'zip -r $ZIPFILE .'
             }
         }
-
        stage('Transfer Files'){
                dir(env.ZIPDIR){
-                sshagent (credentials: [env.CREDS]){
-                    sh 'scp $ZIPFILE root@$TARGETHOST:$TOP'
+                sshagent (credentials: [params.creds]){
+                    sh "scp $ZIPFILE root@${params.target}:$TOP"
                  }
                }
         }
-
-        stage('Deploy'){
-            sshagent (credentials: [env.CREDS]) {
-                sh 'cat deploy.sh | ssh root@$TARGETHOST -t -o StrictHostKeyChecking=no "bash -s" '
+        stage('Build Appliance'){
+            sshagent (credentials: [params.creds]) {
+                sh "cat deploy.sh | ssh root@${params.target} -t -o StrictHostKeyChecking=no \"bash -s\" "
             }
         }
-
-        stage('Build Appliance'){
-            sshagent (credentials: [env.CREDS]) {
-                sh 'cat buildapp.sh | ssh root@$TARGETHOST -t -o StrictHostKeyChecking=no "bash -s" '
+        stage('Start Appliance'){
+            sshagent (credentials: [params.creds]) {
+                sh "cat buildapp.sh | ssh root@${params.target} -t -o StrictHostKeyChecking=no \"bash -s\" "
             }
         }
 }
