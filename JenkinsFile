@@ -11,8 +11,8 @@ env.TARGETHOST = '10.243.10.29'
 env.MIQURL = 'https://github.com/manageiq/manageiq'
 
 node {
-        
-    
+        checkout scm
+
         stage ('GIT Checkout'){
             dir(env.ZIPDIR)
             {
@@ -20,60 +20,30 @@ node {
                 checkout([$class: 'GitSCM', branches: [[name: env.BRANCHES]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: env.MIQCORE]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: env.GITCREDS, url:  env.MIQURL]]])
             }
         }
-        
+
         stage('Package Files'){
-    
+
             dir(env.ZIPDIR){
                 sh 'rm -f $ZIPFILE'
                 sh 'zip -r $ZIPFILE .'
             }
         }
-    
+
        stage('Transfer Files'){
                dir(env.ZIPDIR){
                 sshagent (credentials: [env.CREDS]){
                     sh 'scp $ZIPFILE root@$TARGETHOST:$TOP'
                  }
                }
-        }   
-        
+        }
+
         stage('Deploy'){
-            writeFile file: 'deploy.sh', text: '''
-            TOP="/home/lenovo"
-            PROD=$TOP/prod
-            MIQ=$PROD/manageiq
-            
-            #!/bin/sh
-            if [[ -e $PROD ]]
-            then
-                rm -fR $PROD
-            fi
-            mkdir $PROD
-            unzip $TOP/manageiq.zip -d $PROD
-            /* cp /home/lenovo/Gemfile.demo.rb /home/lenovo/prod/manageiq/Gemfile.dev.rb */
-            cd $MIQ
-            docker ps -a
-            docker stop lenovo_prod
-            docker rm lenovo_prod
-            /*docker rmi lenovo_miq_prod */
-            docker build -t lenovo_miq_prod .
-     
-            '''
             sshagent (credentials: [env.CREDS]) {
                 sh 'cat deploy.sh | ssh root@$TARGETHOST -t -o StrictHostKeyChecking=no "bash -s" '
             }
-        }  
-     
+        }
+
         stage('Build Appliance'){
-            writeFile file: 'buildapp.sh', text: '''
-            if [[ -e /home/lenovo/prod ]]; then
-               cd /home/lenovo/prod/manageiq
-               docker run --name lenovo_prod --privileged -d -p 8443:443 lenovo_miq_prod
-            fi
-           
-           
-    
-            '''
             sshagent (credentials: [env.CREDS]) {
                 sh 'cat buildapp.sh | ssh root@$TARGETHOST -t -o StrictHostKeyChecking=no "bash -s" '
             }
