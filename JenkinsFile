@@ -21,7 +21,6 @@ node {
             }
         }
         stage('Package Files'){
-
             dir(env.ZIPDIR){
                 sh 'rm -f $ZIPFILE'
                 sh 'zip -r $ZIPFILE .'

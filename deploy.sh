@@ -12,4 +12,5 @@ cd $MIQ
 docker ps -a
 docker stop lenovo_prod
 docker rm lenovo_prod
+docker rmi lenovo_miq_prod
 docker build -t lenovo_miq_prod .
