@@ -1,7 +1,7 @@
 #!/bin/sh
 TOP="/home/lenovo"
-PROD="/home/lenovo/prod"
-MIQ="/home/lenovo/prod/manageiq"
+PROD="$TOP/prod"
+MIQ="$PROD/manageiq"
 if [ -e $PROD ]
 then
     rm -fR $PROD
