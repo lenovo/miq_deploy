@@ -9,6 +9,7 @@ fi
 mkdir $PROD
 unzip $TOP/manageiq.zip -d $PROD
 cd $MIQ
+sed -i '/:product/ a\\  :physical_infrastructure: true' config/settings.yml
 docker ps -a
 docker stop lenovo_prod
 docker rm lenovo_prod
